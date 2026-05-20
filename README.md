@@ -4,6 +4,7 @@ TuneWave is a highly responsive, modern, premium web-based music streaming appli
 
 This document serves as a deep dive into every single detail of the project's architecture, technology stack, features, and underlying logic.
 
+
 ---
 
 ## 🛠️ Technology Stack
