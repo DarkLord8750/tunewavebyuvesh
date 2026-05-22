@@ -5,6 +5,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { usePlaylistStore } from '../store/usePlaylistStore';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { musicService } from '../services/musicService';
+import { getStreamUrl } from '../services/corsStreamService';
 import { QueuePanel } from './QueuePanel';
 import { cn } from '../utils/cn';
 import { toast } from 'sonner';
@@ -43,22 +44,43 @@ export function Player() {
 
     const fetchStream = async () => {
       try {
-        const res = await fetch(`/api/stream?id=${currentTrack.youtubeId}`);
-        const data = await res.json();
+        console.log(`[Player] Fetching stream for ${currentTrack.title} (${currentTrack.youtubeId})`);
+        
+        // Try backend first
+        let streamUrlResult = null;
+        
+        try {
+          const res = await fetch(`/api/stream?id=${currentTrack.youtubeId}`);
+          const data = await res.json();
+          
+          if (data.success && data.streamUrl) {
+            streamUrlResult = data.streamUrl;
+            console.log('[Player] Backend stream successful');
+          }
+        } catch (backendErr) {
+          console.warn('[Player] Backend stream failed, trying CORS proxy:', backendErr);
+        }
+
+        // Fallback to CORS proxy if backend fails
+        if (!streamUrlResult) {
+          console.log('[Player] Attempting CORS proxy stream...');
+          streamUrlResult = await getStreamUrl(currentTrack.youtubeId);
+        }
         
         if (!isMounted) return;
 
-        if (data.success && data.streamUrl) {
-          setStreamUrl(data.streamUrl);
+        if (streamUrlResult) {
+          setStreamUrl(streamUrlResult);
           setPlaybackMode('html5');
+          console.log('[Player] Stream URL acquired, ready to play');
         } else {
-          throw new Error('Failed to get stream URL');
+          throw new Error('Failed to get stream URL from all sources');
         }
       } catch (err) {
         if (!isMounted) return;
-        console.error("Stream extraction failed, falling back to YouTube iframe", err);
+        console.error('[Player] Stream extraction failed, falling back to YouTube iframe:', err);
         setPlaybackMode('iframe');
-        toast.info("Switched to fallback player mode");
+        toast.error('Playing via YouTube (stream extraction failed)');
       } finally {
         if (isMounted) setIsLoadingStream(false);
       }
@@ -90,7 +112,7 @@ export function Player() {
     if (!isShuffle && queueIndex + 1 < queue.length) {
       // Preload next track's audio stream
       const nextTrack = queue[queueIndex + 1];
-      fetch(`/api/stream?id=${nextTrack.youtubeId}`).catch(() => {});
+      getStreamUrl(nextTrack.youtubeId).catch(() => {});
     } else if (isAutoplay && currentTrack && queue.length - queueIndex <= 10 && !isFetchingAutoplayRef.current) {
       // Background Append for Autoplay: Buffer 30 tracks when we drop below 10 upcoming tracks
       const fetchAutoplay = async () => {
@@ -111,7 +133,7 @@ export function Player() {
             usePlayerStore.getState().addMultipleToQueue(newTracks);
           }
         } catch (e) {
-          console.error("Background autoplay fetch failed", e);
+          console.error('[Player] Background autoplay fetch failed:', e);
         } finally {
           isFetchingAutoplayRef.current = false;
         }
@@ -124,7 +146,7 @@ export function Player() {
   useEffect(() => {
     if (playbackMode === 'html5' && audioRef.current && streamUrl) {
       if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Audio play error", e));
+        audioRef.current.play().catch(e => console.error('[Player] Audio play error:', e));
       } else {
         audioRef.current.pause();
       }
@@ -164,7 +186,7 @@ export function Player() {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
       if (isPlaying) {
-        audioRef.current.play().catch(e => console.error(e));
+        audioRef.current.play().catch(e => console.error('[Player] Error:', e));
       }
     }
   };
@@ -258,6 +280,7 @@ export function Player() {
           autoPlay={isPlaying}
           preload="auto"
           className="hidden"
+          crossOrigin="anonymous"
         />
       )}
 
