@@ -17,7 +17,7 @@ export function Sidebar() {
     <aside className="w-64 bg-tunewave-ink/50 backdrop-blur-xl border-r border-white/5 flex-col hidden md:flex h-full">
       <div className="p-6">
         <h1 className="text-2xl font-display font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-tunewave-accent to-blue-400">
-          <img src="src\public\tune.png" alt="TuneWave" />
+          <img src="https://i.ibb.co/N613dpGb/tune.png" alt="TuneWave" />
         </h1>
       </div>
 
