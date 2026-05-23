@@ -166,7 +166,7 @@ export function Home() {
           </p>
           <div className="flex items-center gap-4 mt-8 w-fit px-4 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl hover:bg-white/10 transition-colors cursor-default">
             <img
-              src="./src/public/profile.jpg"
+              src="https://i.ibb.co/DfSmyk6v/profile.jpg"
               alt="Uvesh Malik"
               className="w-14 h-14 rounded-full object-cover object-center border border-white/20 shadow-lg ring-2 ring-white/10 overflow-hidden shrink-0"
               style={{ imageRendering: "auto" }}
